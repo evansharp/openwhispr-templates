@@ -1,0 +1,31 @@
+name: Build templates.json
+
+on:
+  push:
+    branches: [main]
+    paths: ["*.md", "build_templates.py"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile and validate templates
+        run: python3 build_templates.py . templates.json
+      - name: Commit templates.json if it changed
+        run: |
+          if git diff --quiet -- templates.json && git ls-files --error-unmatch templates.json >/dev/null 2>&1; then
+            echo "templates.json unchanged"; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add templates.json
+          git commit -m "Rebuild templates.json"
+          git push
